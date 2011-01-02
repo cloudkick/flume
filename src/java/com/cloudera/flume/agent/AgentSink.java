@@ -62,17 +62,38 @@ public class AgentSink extends EventSink.Base {
     BEST_EFFORT, // this is equivalent to syslog's best effort mechanism.
   };
 
+  public static final String BATCH_N = "batchN";
+  public static final String BATCH_LATENCY = "batchLatency";
+
   final EventSink sink;
 
   public AgentSink(Context ctx, String dsthost, int port, ReliabilityMode mode)
       throws FlumeSpecException {
     Preconditions.checkNotNull(dsthost);
 
+    String batchGzDeco = "";
+    String batchN = null;
+    if ((batchN = ctx.getValue(BATCH_N)) != null) {
+      int n = Integer.parseInt(batchN);
+      int ms = 0;
+
+      String batchLatency = "";
+      if ((batchLatency = ctx.getValue(BATCH_LATENCY)) != null) {
+        ms = Integer.parseInt(batchLatency);
+      }
+      batchGzDeco += " batch(" + n + "," + ms + ") ";
+    }
+
+    if (ctx.getValue("compression") != null) {
+      // currently ignore all values, just use gzip
+      batchGzDeco += " gzip ";
+    }
+
     switch (mode) {
     case ENDTOEND: {
       String snk = String.format(
-          "{ ackedWriteAhead => { stubbornAppend =>  { insistentOpen => "
-              + "rpcSink(\"%s\", %d)} } }", dsthost, port);
+          "ackedWriteAhead stubbornAppend insistentOpen " + batchGzDeco
+              + "rpcSink(\"%s\", %d)", dsthost, port);
       sink = FlumeBuilder.buildSink(ctx, snk);
       break;
     }
@@ -84,7 +105,8 @@ public class AgentSink extends EventSink.Base {
       long maxSingleBo = conf.getFailoverMaxSingleBackoff();
       long initialBo = conf.getFailoverInitialBackoff();
       long maxCumulativeBo = conf.getFailoverMaxCumulativeBackoff();
-      String rpc = String.format("rpcSink(\"%s\", %d)", dsthost, port);
+      String rpc = String.format("%s rpcSink(\"%s\", %d)", batchGzDeco,
+          dsthost, port);
 
       String snk = String.format("< %s ? { diskFailover => { insistentAppend "
           + "=> { stubbornAppend => { insistentOpen(%d,%d,%d) => %s} } } } >",
@@ -96,7 +118,7 @@ public class AgentSink extends EventSink.Base {
 
     case BEST_EFFORT: {
       String snk = String.format("< { insistentOpen => { stubbornAppend => "
-          + "rpcSink(\"%s\", %d) } }  ? null>", dsthost, port);
+          + batchGzDeco + "rpcSink(\"%s\", %d) } }  ? null>", dsthost, port);
       sink = FlumeBuilder.buildSink(ctx, snk);
       break;
     }
@@ -137,7 +159,9 @@ public class AgentSink extends EventSink.Base {
     return new SinkBuilder() {
       @Override
       public EventSink build(Context context, String... argv) {
-        Preconditions.checkArgument(argv.length <= 2);
+        Preconditions.checkArgument(argv.length <= 2,
+            "usage: agentE2ESink(collectorhost[, port][, " + BATCH_N + "=1][, "
+                + BATCH_LATENCY + "=0])");
         FlumeConfiguration conf = FlumeConfiguration.get();
         String collector = conf.getCollectorHost();
         int port = conf.getCollectorPort();
@@ -177,7 +201,9 @@ public class AgentSink extends EventSink.Base {
     return new SinkBuilder() {
       @Override
       public EventSink build(Context context, String... argv) {
-        Preconditions.checkArgument(argv.length <= 2);
+        Preconditions.checkArgument(argv.length <= 2,
+            "usage: agentBESink(collectorhost[, port][, " + BATCH_N + "=1][, "
+                + BATCH_LATENCY + "=0])");
         FlumeConfiguration conf = FlumeConfiguration.get();
         String collector = conf.getCollectorHost();
         int port = conf.getCollectorPort();
@@ -213,7 +239,9 @@ public class AgentSink extends EventSink.Base {
     return new SinkBuilder() {
       @Override
       public EventSink build(Context context, String... argv) {
-        Preconditions.checkArgument(argv.length <= 2);
+        Preconditions.checkArgument(argv.length <= 2,
+            "usage: agentBESink(collectorhost[, port][, " + BATCH_N + "=1][, "
+                + BATCH_LATENCY + "=0])");
         FlumeConfiguration conf = FlumeConfiguration.get();
         String collector = conf.getCollectorHost();
         int port = conf.getCollectorPort();

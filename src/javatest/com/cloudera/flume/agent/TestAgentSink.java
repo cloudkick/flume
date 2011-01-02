@@ -29,6 +29,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.cloudera.flume.conf.Context;
+import com.cloudera.flume.conf.FlumeArgException;
 import com.cloudera.flume.conf.FlumeBuilder;
 import com.cloudera.flume.conf.FlumeConfiguration;
 import com.cloudera.flume.conf.FlumeSpecException;
@@ -90,6 +91,36 @@ public class TestAgentSink {
       return;
     }
     Assert.fail("unexpected fall through");
+  }
+
+  @Test
+  public void testBatchCompressBuilder() throws FlumeSpecException {
+    String snk1 = "agentSink(\"localhost\", 12345, compression=true)";
+    FlumeBuilder.buildSink(LogicalNodeContext.testingContext(), snk1);
+
+    String snk2 = "agentSink(\"localhost\", 12345, batchN=100 )";
+    FlumeBuilder.buildSink(LogicalNodeContext.testingContext(), snk2);
+
+    String snk3 = "agentSink(\"localhost\", 12345, batchLatency=1000 )";
+    FlumeBuilder.buildSink(LogicalNodeContext.testingContext(), snk3);
+
+    String snk4 = "agentSink(\"localhost\", 12345, batchN=100, batchLatency=1000)";
+    FlumeBuilder.buildSink(LogicalNodeContext.testingContext(), snk4);
+
+    String snk5 = "agentSink(\"localhost\", 12345, batchN=100, batchLatency=1000, compression=true)";
+    FlumeBuilder.buildSink(LogicalNodeContext.testingContext(), snk5);
+  }
+
+  @Test(expected = FlumeArgException.class)
+  public void testBadBatchCompressBuilder() throws FlumeSpecException {
+    String snk1 = "agentSink(\"localhost\", 12345, batchN=true)";
+    FlumeBuilder.buildSink(LogicalNodeContext.testingContext(), snk1);
+  }
+
+  @Test(expected = FlumeArgException.class)
+  public void testBadBatchCompressBuilder2() throws FlumeSpecException {
+    String snk1 = "agentSink(\"localhost\", 12345, batchLatency=1000, batchN=true)";
+    FlumeBuilder.buildSink(LogicalNodeContext.testingContext(), snk1);
   }
 
   @Test
