@@ -140,19 +140,21 @@ public class TestAgentFailChainSink {
     assertEquals(
         "foo1",
         rpt
-            .getStringMetric("backup.DiskFailover.drainSink.LazyOpenDecorator.InsistentOpen."
+            .getStringMetric("backup.DiskFailover.drainSink.LazyOpenDecorator."
+                + "InsistentAppend.StubbornAppend.InsistentOpen."
                 + "FailoverChainSink.primary.LazyOpenDecorator.StubbornAppend.foo1.name"));
-
     assertEquals(
         "foo2",
         rpt
-            .getStringMetric("backup.DiskFailover.drainSink.LazyOpenDecorator.InsistentOpen."
+            .getStringMetric("backup.DiskFailover.drainSink.LazyOpenDecorator."
+                + "InsistentAppend.StubbornAppend.InsistentOpen."
                 + "FailoverChainSink.backup.BackoffFailover.primary.LazyOpenDecorator."
                 + "StubbornAppend.foo2.name"));
     assertEquals(
         "foo3",
         rpt
-            .getStringMetric("backup.DiskFailover.LazyOpenDecorator.InsistentOpen."
+            .getStringMetric("backup.DiskFailover.LazyOpenDecorator."
+                + "InsistentAppend.StubbornAppend.InsistentOpen."
                 + "FailoverChainSink.backup.BackoffFailover.backup.LazyOpenDecorator."
                 + "StubbornAppend.foo3.name"));
   }
